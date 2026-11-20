@@ -1,1 +1,4 @@
+# 运行时依赖（Linux 会自动安装 python-xlib 以支持 X11 全局热键）
 requests>=2.31.0
+PySide6-Essentials>=6.7
+python-xlib>=0.33; sys_platform == "linux"

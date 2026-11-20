@@ -10,9 +10,18 @@ market_worker.lock
 # Python cache and build output
 __pycache__/
 *.py[cod]
+.venv/
+.venv-*/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
 dist/
 dist_onefile/
 build_*/
+*.log
+
+# PyInstaller
+*.manifest
 
 # Optional large recipe source repository
 NotEnoughUpdates-REPO-master/

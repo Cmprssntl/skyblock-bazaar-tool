@@ -1,223 +1,141 @@
-# SkyBlock Bazaar Tool 3.5
+# SkyBlock Bazaar Tool 4.0
 
-Hypixel SkyBlock 市场分析工具，包含 Bazaar、Craft、Forge 和 Enchant 四个页面。
+Hypixel SkyBlock 市场分析工具（Qt 版）：Bazaar、Craft、Forge、Enchant 四个行情表，外加本地 K 线图。
 
-## 主要功能
+4.0 用 PySide6 重写了原 Tk 界面：单窗口标签页、一个进程、后台刷新不阻塞界面，并新增行情录制与 K 线。
+旧版 3.5 的四个独立窗口和子进程同步机制已移除。
 
-- 打包版使用统一的 `bazaar.exe` 入口，通过页面按钮切换 Bazaar、Craft、Forge 和 Enchant
-- 后台独立请求 Bazaar 和 Auction House 数据，切换页面不会中断请求
-- Bazaar 价格、挂单量、成交量和 7 日成交量分析
-- Craft 合成利润、材料成本和材料可制作数量计算
-- Forge 锻造时间、小时利润和材料可制作数量计算
-- Enchant 附魔书等级、铁砧升级配方和罗马数字显示
-- 参数面板实时筛选、单位转换、列显示、列宽和列顺序调整
-- 本地快捷键和 Windows 全局快捷键
-- 所有顶部按钮都可以设置快捷键，快捷键窗口支持重置全部
-- Forge 页面支持窗口置顶和完整快捷键设置
-- 快捷键捕获支持单键、修饰键组合以及 `V+B` 等普通按键组合
-- 记事本式物品 ID 搜索，支持向上、向下、循环和查找下一个
-- 配置、缓存和请求状态保存在 exe 所在目录的 `bazaar_config` 文件夹
+## 功能
 
-## v3.5 更新
+- **Bazaar**：收购价、出售价、中间价、单件差价、利润率、订单数、挂单件数、7 日成交量
+- **Craft / Forge / Enchant**：材料成本、四种买卖组合利润、利润率、可制作数量、锻造时间与小时利润
+- **K 线**：蜡烛 + MA5/10/20 + 成交量柱 + 十字光标，周期 15m / 1h / 1d（默认 15 分钟，适合游戏内的交易频率）
+- **本地录制**：每次成功刷新 Bazaar 后，把自选物品写入 SQLite，重启后历史仍在
+- **表格**：数值列正确排序（未知值永远在最后）、行内搜索、右键复制 ID / 查看 K 线 / 加入自选
+- **参数面板**：列显隐、列顺序、数值上下限（支持 `10k` / `2.5m` / `1b`）、单位切换、数据源筛选
+- **设置**：单一 `settings.json`、原子写入、自动迁移 3.5 的旧配置、窗口几何与列宽记忆
+- **快捷键**：任意按钮可绑定单键、修饰键组合或 `V+B` 这类普通按键组合；X11 下支持窗口外全局热键
 
-- 更新 NEU 物品和配方库，并对照本地 Bazaar / Auction House 缓存核对市场物品。
-- Craft 新增 11 个普通合成配方，包括 Brine Tonic、Marshroom、Corruption I、Hotspot 系列、三种 Bait Sack 等。
-- 更新 5 个已有 Craft 配方的材料数量、产出数量或默认配方：Blood Donor Artifact、Exportable Carrots、Family-Sized Pot of Honeycomb、Jumbo Pot of Honeycomb、Magma Lord Gauntlet。
-- Forge 新增 Powder of One、Powder of the Few、Powder of the Many 和传奇 Precursor Drone，锻造时间分别为 1、1、6、72 小时。
-- Enchant 新增 Karma、Petalfall、Stealth 的 II–V 级铁砧升级配方，共 12 个成品等级、30 种合并方式；不同材料等级继续分行计算成本和利润。
-- 修复 Craft 中普通合成附魔书的 NEU ID 与 Bazaar ID 不一致的问题，例如将 `CORRUPTION;1` 对应到 `ENCHANTMENT_CORRUPTION_1`。
-- 移除 NEU 已取消的 `STEALTH;1` 和 `PRECURSOR_DRONE;0` 普通合成配方，并清理 5 个已从 NEU 删除的旧物品记录。
-- 修复 AH 请求遇到 `Response ended prematurely` 等传输中断时容易失败的问题；对失败页面进行重试，每页最多尝试 4 次。
-- AH 下载全部页面成功后才更新缓存；最终失败时显示具体页码并保留原缓存，避免将不完整的数据保存为成功结果。
+## 安装与运行
 
-更新后共有 2,504 个有效 Craft 配方、124 个 Forge 配方，以及 540 个 Enchant 成品等级（1,582 种合并方式）。Craft 目录也保留无配方物品的 NEU 元数据，因此 JSON 文件数不等于有效配方数。
+需要 Python 3.10+。
 
-新增市场物品及 NEU 未记录配方的完整清单见 [配方更新核对报告](recipe_update_report.md)。“新增”以更新前物品库为基准；NEU 未记录配方不代表游戏中一定无法合成。
+### Linux
 
-## v3.4 更新
-
-- 修正 Bazaar 收购价和出售价方向：收购价使用 Hypixel Bazaar API 的 `sellPrice`，出售价使用 `buyPrice`。
-- 修正 Bazaar 总成交量和 7 日成交量方向：立即收购对应 API 的 `sellVolume` / `sellMovingWeek`，立即出售对应 `buyVolume` / `buyMovingWeek`。
-- 修正单件差价和利润率：单件差价为 `出售价 - 收购价`，单件利润率为 `(出售价 - 收购价) / 收购价 × 100%`。
-- Craft、Forge 和 Enchant 的材料成本、利润和利润率同步使用修正后的 Bazaar 价格。
-- 新增 `搜索` 按钮，默认快捷键为 `Ctrl+F`。搜索窗口按记事本式方式在当前表格中定位物品，不会修改当前筛选结果。
-- 搜索支持向上、向下、循环查找、查找下一个和 Enter 键查找；匹配行会自动选中并滚动到可见位置。
-- 搜索窗口显示“查找物品ID”，关闭时会保存窗口位置；Bazaar、Craft、Forge、Enchant 都支持。
-
-## 页面切换和数据刷新
-
-四个页面顶部都有相同的主要操作：
-
-- `刷新全部数据`：请求 Bazaar 和 Auction House
-- `刷新BZ数据`：只请求 Bazaar
-- `刷新AH数据`：只请求 Auction House
-- `参数设置面板`：打开当前页面的筛选和显示设置
-- `保存当前设置`：保存当前页面的窗口、列、按钮、筛选和快捷键设置
-- `加载保存设置`：读取之前保存的设置
-- `重置全部默认`：恢复当前页面的默认设置
-- `搜索`：查找当前表格中的物品 ID，默认快捷键为 `Ctrl+F`
-- `窗口置顶`：切换窗口置顶状态
-- `快捷键设置`：设置局部快捷键或 Windows 全局快捷键
-- `输入api（可选）`：保存可选的 Hypixel API Key
-
-使用打包版时，点击页面切换按钮会关闭当前窗口并启动同一个 `bazaar.exe` 的对应页面；运行源码时会启动对应的 Python 页面文件。后台市场请求使用独立 worker，因此切换页面不会取消正在进行的请求。
-
-AH 数据按页下载。遇到传输中断、超时或临时服务器错误时，只重试失败的页面，每页最多尝试 4 次；全部页面成功后才更新缓存。最终失败会显示具体页码并继续使用已有 AH 缓存，不会将未下载完整的数据保存为更新成功。
-
-## 价格与利润计算
-
-Hypixel Bazaar API 的字段名称以即时成交方向命名，工具中的显示含义如下：
-
-- `sellPrice`：玩家创建收购订单时的价格，对应工具中的“收购价”。
-- `buyPrice`：玩家创建出售订单时的价格，对应工具中的“出售价”。
-- 收购成交量和 7 日收购成交量：使用 API 的 `sellVolume`、`sellMovingWeek`，即玩家立即收购时成交的出售挂单量。
-- 出售成交量和 7 日出售成交量：使用 API 的 `buyVolume`、`buyMovingWeek`，即玩家立即出售时成交的收购挂单量。
-- 单件差价：`出售价 - 收购价`。
-- 单件利润率：`(出售价 - 收购价) / 收购价 × 100%`。
-
-Craft、Forge 和 Enchant 中四种利润均使用“成品价格 - 对应材料总成本”计算；利润率以对应材料总成本为分母。
-
-## 搜索
-
-- 点击顶部 `搜索` 按钮或按 `Ctrl+F` 打开搜索窗口。
-- 输入物品 ID 的全部或部分内容即可查找，空格会按下划线处理。
-- 可选择“向上”或“向下”，并可勾选“循环查找”。
-- 点击 `查找下一个` 或按 Enter 会选中下一条匹配行，并自动滚动到该行。
-- 点击 `关闭` 或窗口右上角关闭会保存搜索窗口位置。
-
-## 参数面板
-
-参数面板由显示列、筛选条件、单位和数据源设置组成。
-
-### 通用设置
-
-- 每一列都有显示/隐藏勾选框。
-- 数值列可以填写最小值和最大值。
-- 支持 `默认`、`k`、`m`、`b` 单位，例如 `10k`、`2.5m`。
-- 文字列会显示“不支持数值筛选”。
-- Bazaar、Craft、Forge 可以分别勾选 `Bazaar` 和 `Auction House` 数据源。
-- 勾选数据源后，主界面会实时重新筛选；两个数据源都不勾选时不会显示依赖这些数据的行。
-- 参数面板中的表格支持横向、纵向滚动和拖动列宽。
-- 参数面板表头右键可以选择“左移此列”或“右移此列”。
-- `应用筛选并关闭` 会保留本次修改并关闭面板。
-- `仅关闭` 会放弃本次面板修改，恢复打开面板前的状态。
-
-### Bazaar 参数列
-
-- 物品ID
-- 收购价、出售价、单件差价、单件利润率%
-- 收购挂单量、出售挂单量
-- 总收购成交量、总出售成交量
-- 7日收购成交量、7日出售成交量
-
-### Craft 参数列
-
-- 物品ID、物品收购价、物品出售价、AH最低一口价
-- 合成配方的材料
-- 材料收购价、材料出售价
-- 收购价-材料收购、收购价-材料出售
-- 出售价-材料收购、出售价-材料出售
-- 四种对应利润率
-- 物品收购/出售挂单量
-- 物品总收购/出售成交量
-- 物品7日收购/出售成交量
-- 材料收购/出售订单合计
-- 材料总收购/出售量合计
-- 材料7日收购/出售量合计
-- 按材料收购量、出售量和 7 日成交量计算的可制作数量
-
-Craft 的多材料配方会按每种材料的数量计算总成本。材料可制作数量按各材料可供应数量除以配方需求量后取最小值，避免只根据某一种材料高库存做出错误判断。
-
-### Forge 参数列
-
-- 物品ID、物品收购价、物品出售价、AH最低一口价
-- Forge 配方材料、材料收购价、材料出售价
-- 收购价/出售价分别与材料收购/出售组合的四种利润
-- 上述四种利润对应的利润率
-- 上述四种利润对应的小时利润
-- 锻造时间
-- 物品和材料的挂单量、总成交量、7日成交量
-- 材料可制作数量
-
-Forge 的小时利润会将一次锻造利润除以锻造所需小时数。
-
-### Enchant 参数列
-
-- 附魔名称，不包含等级，例如 `ENCHANTMENT_LOOTING`
-- 等级，使用 Minecraft 风格罗马数字，例如 `V`
-- 合成配方材料，显示材料等级和数量，例如 `II x 2`
-- 物品收购价、物品出售价
-- 材料收购价、材料出售价
-- 收购价/出售价与材料收购/出售组合的四种利润和利润率
-- 物品和材料的挂单量、总成交量、7日成交量
-
-Enchant 页面只使用 Bazaar 数据。每种附魔等级的不同合成方式分开显示，例如一个等级 III 附魔书可能分别显示“等级 II x 2”和“等级 I x 4”两行，并分别计算成本和利润。
-
-## 表格和按钮操作
-
-- 点击表头：按该列排序，再次点击切换升序/降序。
-- 拖动表头边界：实时调整列宽。
-- 主表格表头右键：显示“左移此列”和“右移此列”。列顺序会同步到当前页面的参数面板。
-- 主表格数据行右键：复制该行物品 ID 到剪贴板。
-- 顶部按钮右键：显示“左移此按钮”和“右移此按钮”。
-- 主界面和参数面板共用列顺序；保存设置后，下次加载会恢复列宽和顺序。
-
-## 配方来源
-
-- Craft 和 Forge 配方来自 [NotEnoughUpdates-REPO items](https://github.com/NotEnoughUpdates/NotEnoughUpdates-REPO/tree/master/items)。
-- Enchant 配方根据 Hypixel SkyBlock Wiki 和游戏规则手动整理。
-- Enchant 附魔书数量较多，部分等级或配方可能存在错误，欢迎提交修正。
-
-Craft 中通过材料制作附魔书的配方会匹配 Bazaar 的 `ENCHANTMENT_名称_等级` ID。铁砧升级配方单独放在 Enchant；Karma、Stealth 的 VI 级等特殊来源不会按两本合并生成。
-
-配方目录：
-
-```text
-craft_recipe\
-forge_recipe\
-enchanted_book_recipe\
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python -m skyblock_bazaar
 ```
 
-正常运行不需要 NotEnoughUpdates 原始仓库。重新生成附魔书配方时，将该仓库放在项目根目录，然后运行：
+安装桌面图标（写入 `~/.local/share/applications`，不需要 root）：
+
+```bash
+bash deploy/install-desktop.sh
+```
+
+全局热键依赖 `python-xlib`（`requirements.txt` 已在 Linux 上自动安装）。
+Wayland 会话无法注册全局热键，快捷键只在窗口内生效，程序会在状态栏提示。
+
+### Windows
 
 ```powershell
-python generate_enchanted_book_recipes.py
+py -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+.venv\Scripts\python -m skyblock_bazaar
 ```
 
-## 安装和运行源码
-
-需要 Windows、Python 3.9+、Tkinter 和网络连接：
+打包（PyInstaller）：
 
 ```powershell
-python -m pip install -r requirements.txt
-python bazaar.py
+.venv\Scripts\pip install pyinstaller
+.venv\Scripts\pyinstaller deploy\skyblock-bazaar.spec
 ```
 
-## 打包版
+产物在 `dist\SkyBlockBazaar\`，配方目录与 `bazaar.ico` 会一并打包。
 
-目录版和单文件版都使用同一个 `bazaar.exe` 入口：
+## 数据目录
 
-```text
-bazaar\bazaar.exe
-bazaar_onefile\bazaar.exe
+默认使用项目根目录（打包后是 exe 旁边）的 `bazaar_config/`：
+
+| 文件 | 内容 |
+|---|---|
+| `settings.json` | 全部设置，权限 600 |
+| `bazaar_data.json` | 最近一次 Bazaar 快照缓存 |
+| `auction_data.json` | Auction House BIN 最低价索引 |
+| `history.db` | 本地 K 线历史（SQLite，WAL） |
+| `logs/` | 滚动日志 |
+
+可以用环境变量 `SBZ_DATA_DIR=/path/to/data` 改到别的位置。
+
+首次启动会自动读取 3.5 的 `bazaar_config.json` / `craft_config.json` / `forge_config.json` / `enchant_config.json` 并合并迁移，旧文件保持不动。
+
+## 价格与数量口径
+
+| 名称 | Hypixel 字段 | 含义 |
+|---|---|---|
+| 收购价 | `quick_status.sellPrice` | 立即买入价（卖一价 / ask） |
+| 出售价 | `quick_status.buyPrice` | 立即卖出价（买一价 / bid） |
+| 中间价 | 两者平均 | K 线默认口径 |
+
+**4.0 更正**：API 的 `buyVolume` / `sellVolume` 是订单簿两侧的**挂单件数（深度）**，不是成交量。
+真正成交量使用 `*MovingWeek`（近 7 天滚动成交）：
+
+- 页面上的“卖单件数 / 买单件数”是挂单深度；
+- “7 日买入量 / 7 日卖出量”才是成交量；
+- K 线量柱取相邻快照 `Δ sellMovingWeek + Δ buyMovingWeek`（间隔 ≤ 30 分钟，负值归零），UI 标注“近似”。
+
+价格为 0 表示该方向没有挂单（没有卖一价或买一价），显示为 `-`，不会被当成“免费”。
+配方中只要有一种材料拿不到 Bazaar 价格，成本、利润和可制作数量也显示为 `-`，避免用部分成本算出虚高利润。
+
+## K 线与本地录制
+
+- 开启“录制”（默认开启）后，每次 Bazaar 刷新都会记录自选列表中的物品。
+- 在任意表格行右键 → **加入/移出自选**，或双击行进入 K 线页后点“记录此物品”。
+- 自动刷新间隔默认 60 秒，右键工具栏上的“自动刷新”按钮可在 30 秒 / 1 分钟 / 2 分钟 / 5 分钟 / 关闭之间切换。
+- K 线页可切换价格口径（中间价 / 收购价 / 出售价）和周期；滚轮缩放、拖拽平移、双击回到最新。
+- 历史默认保留 90 天，启动时清理过期行；可在 `settings.json` 的 `history.retention_days` 调整。
+- 无头录制（适合长期挂机，不打开界面）：
+
+```bash
+.venv/bin/python -m skyblock_bazaar record --items ENCHANTED_DIAMOND,BOOSTER_COOKIE --interval 60
+# 只采一次
+.venv/bin/python -m skyblock_bazaar record --items ENCHANTED_DIAMOND --once
 ```
 
-目录版需要保留同目录的 `_internal` 文件夹；单文件版只需要 `bazaar.exe`。首次运行会在 exe 所在目录创建 `bazaar_config` 文件夹。
+不传 `--items` 时使用界面里保存的自选列表。`Ctrl+C` 会先写完队列再退出。
 
-## API Key 和本地数据
+## 快捷键与筛选
 
-Bazaar 公共接口通常可以不使用 API Key。API Key、页面设置和市场缓存都会保存在：
+- 默认 `Ctrl+F` 打开当前页搜索；`Esc` 关闭。
+- “快捷键设置”里点击“设置”，直接按想要的键：支持单键、`Ctrl+Alt+X`，以及按住 `V` 再按 `B` 的普通组合键。
+- 勾选“全局”后窗口失去焦点仍生效（仅修饰键组合；Windows 用 `RegisterHotKey`，X11 用 `XGrabKey`）。
+- 参数面板里数值下限/上限支持 `10k`、`2.5m`、`1b`，也可以配合单位下拉使用；两者不会重复换算。
+- 公式错误（例如输入 `abc`）会标红并提示，不再静默忽略。
 
-```text
-bazaar_config\
-  bazaar_config.json
-  craft_config.json
-  forge_config.json
-  enchant_config.json
-  bazaar_data.json
-  auction_data.json
+## 开发与测试
+
+```bash
+.venv/bin/pip install -e ".[dev]"
+.venv/bin/python -m pytest
+.venv/bin/ruff check skyblock_bazaar tests
 ```
 
-不要将 API Key、配置文件、Bazaar/AH 数据缓存、运行状态或构建目录提交到 GitHub。
+测试包含：
 
-当前版本：3.5
+- 3.5 golden 数据对照（Craft / Forge / Enchant 的价格、成本、利润、产能）
+- 配置迁移、单位解析、排序（未知值最后）、OHLC 聚合、SQLite 写入/清理
+- 四个页面与 K 线页的 offscreen Qt 冒烟测试
+
+`tests/fixtures/bazaar_snapshot.json` 是真实 Bazaar 快照；`tests/golden/` 由 3.5 代码生成。
+有意差异只有“未知价格”规则，测试会逐字段断言。
+
+## 配方库维护
+
+`craft_recipe/`、`forge_recipe/`、`enchanted_book_recipe/` 是运行时读取的配方数据。
+`generate_enchanted_book_recipes.py` 是附魔书配方生成脚本（需要 NEU 仓库和一份 `bazaar_data.json`），仅维护配方时使用。
+本次配方更新的核对结果见 [recipe_update_report.md](recipe_update_report.md)。
+
+## 许可
+
+MIT，见 [LICENSE](LICENSE)。
