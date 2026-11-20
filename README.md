@@ -5,6 +5,21 @@ Hypixel SkyBlock 市场分析工具（Qt 版）：Bazaar、Craft、Forge、Encha
 4.0 用 PySide6 重写了原 Tk 界面：单窗口标签页、一个进程、后台刷新不阻塞界面，并新增行情录制与 K 线。
 旧版 3.5 的四个独立窗口和子进程同步机制已移除。
 
+> **来源与维护**
+>
+> 本项目 fork 自 [wuyingxiaomo/skyblock-bazaar-tool](https://github.com/wuyingxiaomo/skyblock-bazaar-tool)（上游最后版本为 3.5）。
+> 4.0 起由 [Cmprssntl](https://github.com/Cmprssntl) 维护，在上游基础上做了界面重写与功能扩展。
+> 原始代码版权归原作者所有，本项目继续按 MIT 许可发布。
+
+## 4.0 相对上游的主要改动
+
+- **界面**：用 PySide6 重写为单窗口标签页（Bazaar / Craft / Forge / Enchant / K 线），后台刷新不再卡界面，支持 Linux 与 Windows。
+- **K 线与录制**：新增 SQLite 本地行情记录、15m / 1h / 1d K 线（蜡烛、MA5/10/20、成交量、十字光标、缩放平移）以及无头 `record` CLI。
+- **价格语义修正**：明确收购价/出售价的 API 字段；区分挂单深度与 7 日成交量；价格为 0 视为该方向无挂单，缺材料价时成本、利润、产能统一显示 `-`，不再出现虚高利润。
+- **交互**：参数面板（列显隐/顺序/数值上下限/单位/数据源）、列宽与排序记忆、行内搜索、右键菜单、标签页恢复、快捷键设置与 X11 全局热键。
+- **稳定性**：修复 AH 分页重试、断网时缓存价格回写、设置迁移、PyInstaller 路径等问题；历史数据默认保留 90 天并自动清理。
+- **测试与打包**：42 项测试（含 3.5 golden 对照与 Qt 冒烟测试）、ruff 配置、PyInstaller spec、Linux 桌面安装脚本和图标。
+
 ## 功能
 
 - **Bazaar**：收购价、出售价、中间价、单件差价、利润率、订单数、挂单件数、7 日成交量
@@ -139,3 +154,6 @@ py -m venv .venv
 ## 许可
 
 MIT，见 [LICENSE](LICENSE)。
+
+原始项目 [wuyingxiaomo/skyblock-bazaar-tool](https://github.com/wuyingxiaomo/skyblock-bazaar-tool) 的版权归原作者所有；
+4.0 起的修改由 [Cmprssntl](https://github.com/Cmprssntl) 维护。
