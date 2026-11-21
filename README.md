@@ -18,7 +18,7 @@ Hypixel SkyBlock 市场分析工具（Qt 版）：Bazaar、Craft、Forge、Encha
 - **价格语义修正**：明确收购价/出售价的 API 字段；区分挂单深度与 7 日成交量；价格为 0 视为该方向无挂单，缺材料价时成本、利润、产能统一显示 `-`，不再出现虚高利润。
 - **交互**：参数面板（列显隐/顺序/数值上下限/单位/数据源）、列宽与排序记忆、行内搜索、右键菜单、标签页恢复、快捷键设置与 X11 全局热键。
 - **稳定性**：修复 AH 分页重试、断网时缓存价格回写、设置迁移、PyInstaller 路径等问题；历史数据默认保留 90 天并自动清理。
-- **测试与打包**：42 项测试（含 3.5 golden 对照与 Qt 冒烟测试）、ruff 配置、PyInstaller spec、Linux 桌面安装脚本和图标。
+- **测试与打包**：43 项测试（含 3.5 golden 对照与 Qt 冒烟测试）、ruff 配置、PyInstaller spec、Debian 安装包与 Windows 单文件 exe 构建、Linux 桌面安装脚本和图标。
 
 ## 功能
 
@@ -52,6 +52,28 @@ bash deploy/install-desktop.sh
 全局热键依赖 `python-xlib`（`requirements.txt` 已在 Linux 上自动安装）。
 Wayland 会话无法注册全局热键，快捷键只在窗口内生效，程序会在状态栏提示。
 
+#### Debian / Ubuntu 安装包
+
+从 Release 下载 `skyblock-bazaar_4.0.0_amd64.deb` 后：
+
+```bash
+sudo apt install ./skyblock-bazaar_4.0.0_amd64.deb
+# 或：sudo dpkg -i skyblock-bazaar_4.0.0_amd64.deb
+```
+
+安装后可从应用菜单启动，或运行 `skyblock-bazaar`。程序位于 `/opt/skyblock-bazaar/`。
+由于安装目录只读，数据会写入 `~/.local/share/skyblock-bazaar/bazaar_config/`。
+
+自行构建（需要 `dpkg-deb` 和 PyInstaller）：
+
+```bash
+.venv/bin/pip install pyinstaller
+bash deploy/build-deb.sh              # 先打包再生成 dist/skyblock-bazaar_*_amd64.deb
+bash deploy/build-deb.sh --skip-build # 复用已构建的 dist/SkyBlockBazaar
+```
+
+安装包在 Ubuntu 24.04 上构建，要求 glibc ≥ 2.38；其他发行版建议从源码运行或自行打包。
+
 ### Windows
 
 ```powershell
@@ -60,18 +82,33 @@ py -m venv .venv
 .venv\Scripts\python -m skyblock_bazaar
 ```
 
-打包（PyInstaller）：
+从 Release 下载 `SkyBlockBazaar.exe` 可直接双击运行（单文件，首次启动会解压到临时目录，稍慢）。
+
+自行打包：
 
 ```powershell
 .venv\Scripts\pip install pyinstaller
+# 单文件 exe -> dist\SkyBlockBazaar.exe
+.venv\Scripts\pyinstaller deploy\skyblock-bazaar-onefile.spec
+# 目录版 -> dist\SkyBlockBazaar\
 .venv\Scripts\pyinstaller deploy\skyblock-bazaar.spec
 ```
 
-产物在 `dist\SkyBlockBazaar\`，配方目录与 `bazaar.ico` 会一并打包。
+仓库内的 `deploy/github-actions/build-windows.yml` 是可选的 GitHub Actions 工作流模板：复制到 `.github/workflows/` 后即可手动触发，构建 exe 并上传到指定 Release（推送工作流需要 GitHub 的 `workflow` 权限）。
+
+在 Linux 上也可以用 Wine 交叉构建（脚本会安装 Windows Python 与 PySide6）：
+
+```bash
+bash deploy/build-win-wine.sh   # 产物：dist/win/SkyBlockBazaar.exe
+```
 
 ## 数据目录
 
-默认使用项目根目录（打包后是 exe 旁边）的 `bazaar_config/`：
+默认使用程序旁边的 `bazaar_config/`：源码运行时是项目根目录，打包后是 exe 所在目录。
+如果该目录不可写（例如通过 deb 安装到 `/opt`，或 Windows 装在 `Program Files`），会自动回退到用户数据目录：
+
+- Linux：`~/.local/share/skyblock-bazaar/bazaar_config/`
+- Windows：`%APPDATA%\skyblock-bazaar\bazaar_config\`
 
 | 文件 | 内容 |
 |---|---|
@@ -81,7 +118,7 @@ py -m venv .venv
 | `history.db` | 本地 K 线历史（SQLite，WAL） |
 | `logs/` | 滚动日志 |
 
-可以用环境变量 `SBZ_DATA_DIR=/path/to/data` 改到别的位置。
+可以用环境变量 `SBZ_DATA_DIR=/path/to/data` 强制指定位置。
 
 首次启动会自动读取 3.5 的 `bazaar_config.json` / `craft_config.json` / `forge_config.json` / `enchant_config.json` 并合并迁移，旧文件保持不动。
 

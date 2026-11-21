@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=SkyBlock Bazaar Tool
+GenericName=Hypixel SkyBlock Market
+Comment=Bazaar / Craft / Forge / Enchant 行情与 K 线
+Exec=/opt/skyblock-bazaar/SkyBlockBazaar
+Icon=skyblock-bazaar
+Terminal=false
+Categories=Office;Finance;
+Keywords=SkyBlock;Hypixel;Bazaar;Minecraft;
+StartupNotify=true

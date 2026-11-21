@@ -13,7 +13,19 @@ RESOURCE_DIR = Path(getattr(sys, "_MEIPASS", SOURCE_DIR)) if getattr(sys, "froze
 # exe 所在目录（冻结包）或源码根目录
 BASE_DIR = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else SOURCE_DIR
 
-DATA_DIR = Path(os.environ.get("SBZ_DATA_DIR") or (BASE_DIR / "bazaar_config"))
+
+def default_data_dir() -> Path:
+    """优先把数据放在程序旁边；系统安装目录不可写时退回用户数据目录。"""
+    if os.access(BASE_DIR, os.W_OK):
+        return BASE_DIR / "bazaar_config"
+    if os.name == "nt":
+        root = Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming")
+    else:
+        root = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
+    return root / "skyblock-bazaar" / "bazaar_config"
+
+
+DATA_DIR = Path(os.environ.get("SBZ_DATA_DIR") or default_data_dir())
 
 RECIPE_DIRS = {
     "craft": RESOURCE_DIR / "craft_recipe" / "items",
